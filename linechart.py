@@ -25,10 +25,9 @@ fignum = 0
 
 now = datetime.now().date()
 today = now.strftime('%Y-%m-%d')
-db = f'{path[0]}/hours.db'
+db = f'{path[0]}/.db'
 
 def track_save(seconds=None):
-	# create hours.db if it doesn't already exist
 	con = sqlite3.connect(db)
 	cur = con.cursor()
 	cur.execute(

@@ -45,41 +45,48 @@ class TrackWindow(Gtk.ApplicationWindow):
 		Gtk.StyleContext().add_provider_for_screen( Gdk.Screen.get_default()
 			,provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION )
 		provider.load_from_data(b'''
-			.switch {font-size: 16pt}
-			.time   {font-size: 24pt}
-			.on     {color: turquoise}
-			.off    {color: grey}
+			.pad    { font-size: 2pt; }
+			.switch { font-size: 16pt }
+			.time   { font-size: 24pt }
+			.on     { color: turquoise }
+			.off    { color: grey }
 		''')
 
 		# # table
 		table = Gtk.Table()
 		self.add(table)
-		i = 0 # row index
+		row = 0
+
+		dummy = Gtk.Label()
+		context = dummy.get_style_context()
+		context.add_class('pad')
+		table.attach(dummy, 0, 6, row, row+1)
+		row += 1
 
 		# # play/pause switch
 		self.switch = Gtk.Switch()
 		self.switch.connect('notify::active', self.on_pause)
-		table.attach(self.switch, 0, 1, i, i+1)
+		table.attach(self.switch, 1, 5, row, row+1)
 		# add a dummy label for a taller switch
 		lbl_dummy = Gtk.Label()
 		context = lbl_dummy.get_style_context()
 		context.add_class('switch')
-		table.attach(lbl_dummy, 0, 1, i, i+1)
-		i += 1
+		table.attach(lbl_dummy, 0, 6, row, row+1)
+		row += 1
 
 		# # clock label
 		self.lbl_clock = Gtk.Label()
 		self.context = self.lbl_clock.get_style_context()
 		self.context.add_class('time')
 		self.context.add_class('off')
-		table.attach(self.lbl_clock, 0, 1, i, i+1)
+		table.attach(self.lbl_clock, 0, 6, row, row+1)
 		self.tick()
-		i += 1
+		row += 1
 
 		# # graph button
 		btn_graph = Gtk.Button(label='Graph')
 		btn_graph.connect('clicked', self.on_graph_clicked)
-		table.attach(btn_graph, 0, 1, i, i+1)
+		table.attach(btn_graph, 0, 6, row, row+1)
 
 		# start the checker
 		GLib.timeout_add(4000, self.check)
