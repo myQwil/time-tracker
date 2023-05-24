@@ -12,8 +12,8 @@ import matplotlib
 import numpy as np
 from sys import path
 from math import ceil
-from datetime import datetime, timedelta
-from matplotlib import pyplot as plt, dates as mdates
+from datetime import datetime
+from matplotlib import dates, pyplot as plt
 
 # Preferences
 ndays = 28
@@ -38,15 +38,6 @@ def track_save(seconds=None):
 		if seconds is not None:
 			cur.execute('UPDATE work SET seconds = ? WHERE day = ?', (seconds, today))
 	else:
-		# insert blank rows on any skipped days
-		cur.execute('SELECT day FROM work ORDER BY day DESC LIMIT 1')
-		prev = cur.fetchone()
-		if prev:
-			one_day = timedelta(days=1)
-			prev = datetime.strptime(prev[0],'%Y-%m-%d').date() + one_day
-			while prev < now:
-				cur.execute('INSERT INTO work VALUES(?, 0)', (prev.strftime('%Y-%m-%d'),))
-				prev += one_day
 		if seconds is None:
 			seconds = 0
 		cur.execute('INSERT INTO work VALUES (?, ?)', (today, seconds))
@@ -72,38 +63,22 @@ def show(app=None):
 	if plt.fignum_exists(fignum):
 		return
 
-	con = sqlite3.connect(db)
-	cur = con.cursor()
-	cur.execute('SELECT * FROM work ORDER BY day DESC LIMIT ?', (ndays,))
-	rows = cur.fetchall()
-	con.close()
-
-	s2h = 1 / 3600
-	hours = [r[1] * s2h for r in reversed(rows)]
-	days = [mdates.datestr2num(r[0]) for r in reversed(rows)]
-	rowlen = len(rows)
-	if rowlen < ndays:
-		# prepend the list with blank days
-		rem = ndays - rowlen
-		firstday = days[0] - rem
-		hours = [0.0] * rem + hours
-		days = [firstday + i for i in range(rem)] + days
-
 	fig, ax = plt.subplots()
 	fignum = fig.number
-	ax.xaxis.set_major_locator(mdates.DayLocator(interval=ceil(len(days) / 8)))
-	ax.xaxis.set_major_formatter(mdates.DateFormatter('%b-%d'))
+	ax.xaxis.set_major_locator(dates.DayLocator(interval=ceil(ndays / 8)))
+	ax.xaxis.set_major_formatter(dates.DateFormatter('%b-%d'))
+	plt.title(f'Work Hours for the Last {ndays} Days')
+	plt.xlabel('Days')
+	plt.ylabel('Hours Worked')
 
-	annot = ax.annotate(
-		 text='', xy=(0, 0), xytext=(0, 10), ha='center'
-		,textcoords='offset points', bbox=dict(boxstyle='round', fc='w')
-	)
+	annot = ax.annotate(text='', xy=(0, 0), xytext=(0, 10), ha='center'
+		, textcoords='offset points', bbox=dict(boxstyle='round', fc='w'))
 	annot.get_bbox_patch().set_facecolor('black')
 
 	def on_pick(event):
 		xdata, ydata = event.artist.get_data()
 		i = event.ind
-		date = mdates.num2date(xdata[i]).strftime('%b-%d')
+		date = dates.num2date(xdata[i]).strftime('%b-%d')
 		hr = ydata[i]
 		mn = hr % 1 * 60
 		sc = mn % 1 * 60
@@ -134,11 +109,21 @@ def show(app=None):
 			annot.set_visible(False)
 			fig.canvas.draw_idle()
 			return False, dict()
-	plt.plot(days, hours, marker='o', picker=line_picker)
 
-	plt.title(f'Work Hours for the Last {ndays} Days')
-	plt.xlabel('Days')
-	plt.ylabel('Hours Worked')
+	con = sqlite3.connect(db)
+	cur = con.cursor()
+	cur.execute('SELECT * FROM work ORDER BY day DESC LIMIT ?', (ndays,))
+	rows = cur.fetchall()
+	con.close()
+
+	s2h = 1 / 3600
+	stop = int(dates.datestr2num(rows[0][0])) + 1
+	start = stop - ndays
+	hours = [0.0] * ndays
+	for x in rows:
+		hours[int(dates.datestr2num(x[0]) - start)] = x[1] * s2h
+
+	plt.plot(list(range(start, stop)), hours, marker='o', picker=line_picker)
 
 	win = Gtk.Window()
 	win.set_title('Work Chart')
