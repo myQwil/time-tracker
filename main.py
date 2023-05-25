@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import time
-import linechart
+import graph
 from os import popen, system
 
 import gi
@@ -38,7 +38,7 @@ class TrackWindow(Gtk.ApplicationWindow):
 		self.quart = None
 		self.app = app
 
-		self.more = linechart.track_load()
+		self.more = graph.track_load()
 
 		# # CSS styling
 		provider = Gtk.CssProvider()
@@ -135,11 +135,11 @@ class TrackWindow(Gtk.ApplicationWindow):
 		self.tick()
 
 	def on_graph_clicked(self, widget):
-		linechart.track_save(self.get_total())
-		linechart.show(self.app)
+		graph.track_save(self.get_total())
+		graph.show(self.app)
 
 	def on_delete(self, widget, *data):
-		linechart.track_save(self.get_total())
+		graph.track_save(self.get_total())
 		return False
 
 app.run()
